@@ -1,17 +1,28 @@
 import boto3
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
-    client = boto3.client('logs')
-    
+
+    logs_client = boto3.client('logs')
+
     try:
-        response = client.describe_log_groups()
+        response = logs_client.describe_log_groups()
         log_groups = response['logGroups']
-        
-        log_groups_str = '\n'.join([f"{group['logGroupName']}"] for group in log_groups)
-        
+
+        for log_group in log_groups:
+            logger.info(log_group['logGroupName'])
+
         return {
             'statusCode': 200,
-            'body': f"Found {len(log_groups)} log groups:\n{log_groups_str}"
+            'body': f"Listed {len(log_groups)} log groups."
         }
+
     except Exception as e:
-        print(e)
+        logger.error(f"Error: {str(e)}")
+        return {
+            'statusCode': 500,
+            'body': 'An error occurred while listing log groups.'
+        }
