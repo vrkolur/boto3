@@ -10,17 +10,19 @@ logger.setLevel(logging.INFO)
 
 
 # Update the info at lambda_handeler only 
-
 def lambda_handler(event, context):
-    logs_client  = boto3.client('logs')
-    time_duration = '4h' 
-    log_group_name = "/aws/containerinsights/aws-dev-eks-cluster/application"
-    # filter_pattern = "filter @message like /401 Unauthorized/ and @message like /guid/ | parse @message '\"orgID\":*,' as orgId | stats count(*) by orgId"
-    filter_pattern  = 'filter @message like /error/'
-    increase_threshold_count_by = 20000
-    # Enter in HH:MM:SS format only (24 hr clock format)
-    cron_job_scheduled_at= '00:00:00'
-    alarm_handler(event, log_group_name, filter_pattern, increase_threshold_count_by, time_duration, cron_job_scheduled_at)
+    try:
+        # logs_client = boto3.client('logs')
+        time_duration = '4h'
+        log_group_name = "/aws/containerinsights/aws-dev-eks-cluster/application"
+        filter_pattern = 'filter @message like /error/'
+        increase_threshold_count_by = 20000
+        cron_job_scheduled_at = '00:00:00'
+        alarm_handler(event, log_group_name, filter_pattern, increase_threshold_count_by, time_duration, cron_job_scheduled_at)
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        raise e
+
 
 cloudwatch_client = boto3.client('cloudwatch')
 lambda_client = boto3.client('lambda')
@@ -68,11 +70,11 @@ def update_alarm_status(alarm_information, new_threshold ):
     notification_arn = 'arn:aws:sns:us-east-1:126263378245:Alarm_status'
 
     # Any value to be updated put it here 
-    alarm_name = alarm_information
+    alarm_name = alarm_information['AlarmName']
     metric_name = alarm_information['MetricName']
     namespace = alarm_information
     statistic = 'Sum'
-    period = 60
+    period = 30
     evaluation_periods = 1
     old_threshold = alarm_information['Threshold']
     comparison_operator = 'GreaterThanThreshold'
@@ -90,10 +92,7 @@ def update_alarm_status(alarm_information, new_threshold ):
         AlarmActions=[lambda_arn, notification_arn],
         AlarmDescription='Alarm to monitor Lambda errors and invoke a function'
     )
-    if response is not None:
-        return 1 if response['ResponseMetadata']['HTTPStatusCode'] == 200 else 0
-    else:
-        return 0
+    return response
     
 
 def convert_into_seconds(duration_str):
@@ -185,14 +184,16 @@ def alarm_handler(event, log_group_name, filter_pattern, new_threshold, time_dur
     # get the alarm information
     alarm_information = get_alarm_description(event['alarmData']['alarmName'])
     if alarm_information['StateValue'] == 'ALARM':
-        update_alarm_status(alarm_information, new_threshold)
+        alarm_update_response = update_alarm_status(alarm_information, new_threshold)
+        if alarm_update_response['ResponseMetadata']['HTTPStatusCode'] == 200:
+            # get the current time and convert it into epoc time
+            now = datetime.datetime.now()
+            end_time = now.strftime("%Y-%m-%d %H:%M:%S")
+            epoc_end_time = get_epoc_time(end_time)
 
-        # get the current time and convert it into epoc time
-        now = datetime.datetime.now()
-        end_time = now.strftime("%Y-%m-%d %H:%M:%S")
-        epoc_end_time = get_epoc_time(end_time)
-
-        start_time = calculate_duration_from_now(time_duration)
-        epoc_start_time = get_epoc_time(start_time)
-        response = filter_events(log_group_name, start_time, end_time, filter_pattern)
-        logger.info(f"Lambda called Successfullt and the no of errors are: {len(response)}")
+            start_time = calculate_duration_from_now(time_duration)
+            epoc_start_time = get_epoc_time(start_time)
+            response = filter_events(log_group_name, start_time, end_time, filter_pattern)
+            logger.info(f"Lambda called Successfullt and the number of errors are: {len(response)}")
+        else:
+            logger.error("Error at updating the alarm status")  
