@@ -8,6 +8,11 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+# Alarm Names are:
+    # 1. 401_status_code_error 
+    # 2. 403_status_code_error
+    # 3. 
+
 
 # Update the info at lambda_handeler only 
 def lambda_handler(event, context):
@@ -72,7 +77,7 @@ def update_alarm_status(alarm_information, new_threshold ):
     # Any value to be updated put it here 
     alarm_name = alarm_information['AlarmName']
     metric_name = alarm_information['MetricName']
-    namespace = alarm_information
+    namespace = alarm_information['Namespace']
     statistic = 'Sum'
     period = 30
     evaluation_periods = 1
@@ -183,8 +188,10 @@ def filter_events(log_group_name, start_time = 1719014400000, end_time = 1719100
 def alarm_handler(event, log_group_name, filter_pattern, new_threshold, time_duration, cron_job_scheduled_at ):
     # get the alarm information
     alarm_information = get_alarm_description(event['alarmData']['alarmName'])
+
     if alarm_information['StateValue'] == 'ALARM':
         alarm_update_response = update_alarm_status(alarm_information, new_threshold)
+
         if alarm_update_response['ResponseMetadata']['HTTPStatusCode'] == 200:
             # get the current time and convert it into epoc time
             now = datetime.datetime.now()
@@ -193,7 +200,7 @@ def alarm_handler(event, log_group_name, filter_pattern, new_threshold, time_dur
 
             start_time = calculate_duration_from_now(time_duration)
             epoc_start_time = get_epoc_time(start_time)
-            response = filter_events(log_group_name, start_time, end_time, filter_pattern)
+            response = filter_events(log_group_name, epoc_start_time, epoc_end_time, filter_pattern)
             logger.info(f"Lambda called Successfullt and the number of errors are: {len(response)}")
         else:
             logger.error("Error at updating the alarm status")  

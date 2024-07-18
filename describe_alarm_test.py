@@ -3,11 +3,10 @@ import boto3
 client = boto3.client('cloudwatch')
 
 alarm_name = 'lambda_error_alarm'
-alarm_type = 'MetricAlarm'
+# alarm_type = 'MetricAlarm'
 
 response = client.describe_alarms(
-    AlarmNames=[alarm_name],
-    AlarmTypes=[alarm_type]
+    AlarmNames=[alarm_name]
 )
 
 
@@ -23,4 +22,4 @@ if response['MetricAlarms']:
     print(f"Comparison Operator: {alarm['ComparisonOperator']}")
     print(f"Alarm State: {alarm['StateValue']}")
 else:
-    print(f"No alarm found with name '{alarm_name}' and type '{alarm_type}'")
+    print(f"No alarm found with name '{alarm_name}'")
