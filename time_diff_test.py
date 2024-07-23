@@ -1,29 +1,24 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
-def calculate_absolute_time_difference_in_seconds(given_time_str):
+def calculate_time_difference_in_seconds(given_time_str):
+    current_year = datetime.now().year
     given_time_components = given_time_str.split(':')
     
     if len(given_time_components) != 3:
-        print("Enter in the corrent format")
-        exit(0)
+        print("Invalid time format. Please provide the time in 'HH:MM:SS' format.")
+        return None
     
-    given_time = datetime.strptime(f"{given_time_str}", "%H:%M:%S")
+    given_time_str_with_year = f"{current_year}-{given_time_str}"
+    print(given_time_str_with_year)
+    given_time = datetime.strptime(given_time_str_with_year, "%Y-%H:%M:%S")
     
     current_time = datetime.now()
     
     time_difference = given_time - current_time
     
-    return abs(time_difference.total_seconds())
+    return abs(time_difference)
 
 
-some_time = "14:30:00"
-abs_differnence = calculate_absolute_time_difference_in_seconds(some_time)
-
-current_time = datetime.now()
-a = datetime.now()
-
-current_time = a.strftime("%H:%M:%S")
-print(current_time)
-
-
-
+test_time = '14:00:00'
+res = calculate_time_difference_in_seconds(test_time)
+print(res)

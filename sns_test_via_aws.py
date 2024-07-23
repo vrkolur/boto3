@@ -21,29 +21,24 @@ def lambda_handler(event, context):
       <p>This is a notification from AWS.</p>
     </body>
     </html>
-                """            
-
-    # The character encoding for the email.
+                """  
+              
     charset = "UTF-8"
 
-    # Create a new SES email message
     msg = {"Body": {"Html": {"Charset": charset, "Data": body_html},
                     "Text": {"Charset": charset, "Data": body_text}},
            "Subject": {"Charset": charset, "Data": "AWS Notification"}}
 
-    to_addresses = ["varunkolur17@gmail.com"]
+    to_addresses = ["varun.ravikolur@plansource.com"]
 
     from_email = "varun.ravikolur@plansource.com"  
 
-    # Try to send the email
     try:
-        #Provide the contents of the Amazon SES message.
         response = ses.send_email(
             Destination={"ToAddresses": to_addresses},
             Message=msg,
             Source=from_email,
         )
-    # Display an error if something goes wrong.	
     except ClientError as e:
         print(e.response['Error']['Message'])
     else:
