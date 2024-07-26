@@ -1,24 +1,36 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+import datetime 
+import time
 
-def calculate_time_difference_in_seconds(given_time_str):
-    current_year = datetime.now().year
-    given_time_components = given_time_str.split(':')
-    
-    if len(given_time_components) != 3:
-        print("Invalid time format. Please provide the time in 'HH:MM:SS' format.")
-        return None
-    
-    given_time_str_with_year = f"{current_year}-{given_time_str}"
-    print(given_time_str_with_year)
-    given_time = datetime.strptime(given_time_str_with_year, "%Y-%H:%M:%S")
-    
-    current_time = datetime.now()
-    
-    time_difference = given_time - current_time
-    
-    return abs(time_difference)
+def absolute_time_differnence(cron_job_scheduled_at):
+    now = datetime.datetime.now()
+    given_time = datetime.datetime.strptime(cron_job_scheduled_at, "%H:%M:%S")
+    time_difference = given_time - now
+    # time_difference =  abs(time_difference.total_seconds())
+    # time_difference_in_minutes = (int)(time_difference/60 )
+    # only muliple of 60 is accepted or 0,15,30
+    return (time_difference)
+
+# print(absolute_time_differnence('00:00:00'))
+
+# hr -> 3600
+# min -> 60
+# sec -> 1
 
 
-test_time = '14:00:00'
-res = calculate_time_difference_in_seconds(test_time)
-print(res)
+# current_time = now.strftime("%H:%M:%S")
+
+# print(current_time)
+
+def calculate_absolute_time_difference(corn_job_scheduled_at):
+    now = datetime.datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    current_time = current_time.split(':')  
+    given_time = corn_job_scheduled_at.split(':')
+    hours_to_sec = abs((int)(current_time[0])-(int)(given_time[0]))*3600
+    minutes_to_sec = abs((int)(current_time[1])-(int)(given_time[1]))*60    
+    seconds_to_sec = abs((int)(current_time[2])-(int)(given_time[2]))
+    sum = (int)((hours_to_sec+minutes_to_sec+seconds_to_sec)/60)
+    return int(sum)*60
+
+print(calculate_absolute_time_difference('23:18:45'))

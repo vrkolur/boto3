@@ -1,4 +1,18 @@
 import boto3
+from datetime import datetime
+import datetime 
+import time
+
+def calculate_absolute_time_difference(corn_job_scheduled_at):
+    now = datetime.datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    current_time = current_time.split(':')  
+    given_time = corn_job_scheduled_at.split(':')
+    hours_to_sec = abs((int)(current_time[0])-(int)(given_time[0]))*3600
+    minutes_to_sec = abs((int)(current_time[1])-(int)(given_time[1]))*60    
+    seconds_to_sec = abs((int)(current_time[2])-(int)(given_time[2]))
+    sum = (int)((hours_to_sec+minutes_to_sec+seconds_to_sec)/60)
+    return int(sum)*60
 
 cloudwatch_client = boto3.client('cloudwatch')
 lambda_client = boto3.client('lambda')
@@ -15,8 +29,8 @@ alarm_name = 'lambda_error_alarm'
 metric_name = 'lambda_demo_error_pattern'
 namespace = 'filter_demo'
 statistic = 'Sum'
-threshold = 20
-period = 30
+threshold = 4
+period = 10
 evaluation_periods = 1
 comparison_operator = 'GreaterThanThreshold'
 

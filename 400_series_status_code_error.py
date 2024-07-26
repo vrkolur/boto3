@@ -32,7 +32,7 @@ def calculate_duration_from_now(selected_duration):
 
 
 def check_for_status_code(user_choice):
-    valid_options = [401, 403, 409, 504]
+    valid_options = [401, 403, 409]
     try:
         if user_choice in valid_options:
             return user_choice

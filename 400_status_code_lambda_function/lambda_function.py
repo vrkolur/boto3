@@ -4,14 +4,15 @@ from datetime import datetime
 import datetime 
 import time
 import logging
-import tabulate
+# import tabulate
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Alarm Names are:
     # 1. 401_status_code_error 
     # 2. 403_status_code_error
-    # 3. 
+    # 3. Add new ones if you find any.
+    # The threshold is updating almost 3 time check why?
 
 
 # Update the info at lambda_handeler only 
@@ -31,7 +32,6 @@ def lambda_handler(event, context):
 
 cloudwatch_client = boto3.client('cloudwatch')
 lambda_client = boto3.client('lambda')
-
 
 
 def get_alarm_description(alarm_name):
@@ -79,7 +79,8 @@ def update_alarm_status(alarm_information, new_threshold, time_duration ):
     metric_name = alarm_information['MetricName']
     namespace = alarm_information['Namespace']
     statistic = 'Sum'
-    period = 30
+    # period max can be 1d or 86400 seconds.
+    period = time_duration
     evaluation_periods = 1
     old_threshold = alarm_information['Threshold']
     comparison_operator = 'GreaterThanThreshold'
@@ -89,9 +90,9 @@ def update_alarm_status(alarm_information, new_threshold, time_duration ):
         MetricName=metric_name,
         Namespace=namespace,
         Statistic=statistic,
-        Period=time_duration,
+        Period=period,
         EvaluationPeriods=evaluation_periods,
-        # Threshold= (old_threshold + new_threshold),
+        Threshold= (old_threshold + new_threshold),
         ComparisonOperator=comparison_operator,
         TreatMissingData='notBreaching',
         AlarmActions=[lambda_arn, notification_arn],
@@ -134,10 +135,33 @@ def get_epoc_time(input_date_time):
 # calculate 
 def calculate_duration_from_now(time_duration):
     now = datetime.datetime.now()
-    # duration_in_seconds = convert_into_seconds(time_duration)
-    duration_in_seconds = 300
+    duration_in_seconds = convert_into_seconds(time_duration)
+    # duration_in_seconds = 300
     trailing_time = now - datetime.timedelta(seconds=duration_in_seconds)
     return trailing_time.strftime("%Y-%m-%d %H:%M:%S")
+
+# This is discarded because the time is calculated from 1970 
+# def absolute_time_differnence(cron_job_scheduled_at):
+#     now = datetime.datetime.now()
+#     given_time = datetime.datetime.strptime(cron_job_scheduled_at, "%H:%M:%S")
+#     time_difference = given_time - now
+#     time_difference =  abs(time_difference.total_seconds())
+#     time_difference_in_minutes = (int)(time_difference/60 )
+#     # only muliple of 60 is accepted or 0,15,30
+#     return (int)(time_difference_in_minutes)*60
+
+
+def calculate_absolute_time_difference(corn_job_scheduled_at):
+    now = datetime.datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    current_time = current_time.split(':')  
+    given_time = corn_job_scheduled_at.split(':')
+    hours_to_sec = abs((int)(current_time[0])-(int)(given_time[0]))*3600
+    minutes_to_sec = abs((int)(current_time[1])-(int)(given_time[1]))*60    
+    seconds_to_sec = abs((int)(current_time[2])-(int)(given_time[2]))
+    sum = (int)((hours_to_sec+minutes_to_sec+seconds_to_sec)/60)
+    # The Alarm Update period field only expects multiples of 60 hence.
+    return int(sum)*60
 
 
 # Filter the action based on the alarm trigged (privide values els defalut value will be selected)
@@ -171,21 +195,21 @@ def alarm_handler(event, log_group_name, filter_pattern, new_threshold, time_dur
     alarm_information = get_alarm_description(event['alarmData']['alarmName'])
 
     if alarm_information['StateValue'] == 'ALARM':
-        abs_time_period = absolute_time_differnence(cron_job_scheduled_at)
-        alarm_update_response = update_alarm_status(alarm_information, new_threshold, abs_time_period)
+        abs_time_period = calculate_absolute_time_difference(cron_job_scheduled_at)
+        # alarm_update_response = update_alarm_status(alarm_information, new_threshold, (int)(abs_time_period))
 
-        if alarm_update_response['ResponseMetadata']['HTTPStatusCode'] == 200:
-            # get the current time and convert it into epoc time
-            now = datetime.datetime.now()
-            end_time = now.strftime("%Y-%m-%d %H:%M:%S")
-            epoc_end_time = get_epoc_time(end_time)
+        # if alarm_update_response['ResponseMetadata']['HTTPStatusCode'] == 200:
+        #     # get the current time and convert it into epoc time
+        #     now = datetime.datetime.now()
+        #     end_time = now.strftime("%Y-%m-%d %H:%M:%S")
+        #     epoc_end_time = get_epoc_time(end_time)
 
-            start_time = calculate_duration_from_now(time_duration)
-            epoc_start_time = get_epoc_time(start_time)
-            response = filter_events(log_group_name, epoc_start_time, epoc_end_time, filter_pattern)
-            if response is not None:
-                logger.info(f"Lambda called Successfullt and the number of errors are: {len(response)}")
-            else:
-                logger.info("Error Fetcig Data")
-        else:
-            logger.error("Error at updating the alarm status")  
+        #     start_time = calculate_duration_from_now(time_duration)
+        #     epoc_start_time = get_epoc_time(start_time)
+        #     response = filter_events(log_group_name, epoc_start_time, epoc_end_time, filter_pattern)
+        #     if response is not None:
+        #         logger.info(f"Lambda called Successfullt and the number of errors are: {len(response)}")
+        #     else:
+        #         logger.info("Error Fetching Data")
+        # else:
+        #     logger.info("Error at updating the alarm status")

@@ -31,7 +31,7 @@ def lambda_handler(event, context):
         topic_arn = "arn:aws:sns:us-east-1:126263378245:Alarm_status"
         # If you want to increase the threshold then add here.
         increase_threshold_count_by = 0
-        cron_job_scheduled_at = '02:00:00'
+        cron_job_scheduled_at = '02:00:00' # This is in 24hr clock.
         alarm_handler(event, log_group_name, filter_pattern, increase_threshold_count_by, time_duration, cron_job_scheduled_at, topic_arn)
     except Exception as e:
         logger.error(f"An error occurred: {e}")
@@ -173,6 +173,8 @@ def filter_events(log_group_name, start_time = 1719014400000, end_time = 1719100
             queryId=query_id
         )
     return response['results']
+
+
     
 def absolute_time_differnence(cron_job_scheduled_at):
     now = datetime.datetime.now()
@@ -209,6 +211,11 @@ def alarm_handler(event, log_group_name, filter_pattern, new_threshold, time_dur
                 logger.info("Error Fetching Data")
         else:
             logger.error("Error at updating the alarm status")  
+
+
+
+# Change the log group name 
+# 
 
 def send_email_with_table(filter_response, recipient_email, subject):
     # Format the filter_response as a table

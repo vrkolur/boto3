@@ -38,3 +38,29 @@
     }
 }
 
+Name
+lambda_error_alarm
+
+Type
+Metric alarm
+
+Description
+Alarm to monitor Lambda errors and invoke a function
+
+State
+OK
+Threshold
+lambda_demo_error_pattern is outside the band (width: 2) for 1 datapoints within 2 minutes
+Namespace
+filter_demo
+Metric name
+lambda_demo_error_pattern
+Statistic
+Sum
+Period
+2 minutes
+Datapoints to alarm
+1 out of 1
+Missing data treatment
+Treat missing data as good (not breaching threshold)
+
